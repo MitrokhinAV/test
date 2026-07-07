@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: podinfo-demo
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
   source:
@@ -21,7 +19,6 @@ spec:
           value: "LoadBalancer"
         - name: service.externalPort
           value: "9898"
-  priorityClassName: app-low-priority
   destination:
     server: https://kubernetes.default.svc
     namespace: default
