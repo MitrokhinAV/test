@@ -19,6 +19,8 @@ spec:
           value: "LoadBalancer"
         - name: service.externalPort
           value: "9898"
+        - name: priorityClassName
+          value: "app-low-priority"
   destination:
     server: https://kubernetes.default.svc
     namespace: default
