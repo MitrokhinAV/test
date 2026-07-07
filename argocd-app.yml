@@ -17,6 +17,10 @@ spec:
           value: "3"
         - name: ui.color
           value: "#34577c"
+        - name: service.type
+          value: "LoadBalancer"
+        - name: service.externalPort
+          value: "9898"
     template:
       spec:
         priorityClassName: app-low-priority
