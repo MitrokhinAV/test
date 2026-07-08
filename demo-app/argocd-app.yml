@@ -21,6 +21,14 @@ spec:
           value: "9898"
         - name: priorityClassName
           value: "app-low-priority"
+        - name: resources.requests.cpu
+          value: "100m"
+        - name: resources.requests.memory
+          value: "64Mi"
+        - name: resources.limits.cpu
+          value: "200m"
+        - name: resources.limits.memory
+          value: "128Mi"
   destination:
     server: https://kubernetes.default.svc
     namespace: default
