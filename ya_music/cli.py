@@ -41,6 +41,16 @@ def draw_cli_timeline(player):
     sys.stdout.write("\033[2J\033[H")
     sys.stdout.flush()
 
+    # Драйвер плавности эквалайзера внутри CLI:
+    # Пока терминал ждет свои 0.2 секунды до следующего обновления текста,
+    # мы крутим быстрый цикл прорисовки Pygame окна на частоте 60 FPS
+    if player.visualizer.is_enabled:
+        for _ in range(12): # 12 кадров по ~16мс как раз дадут нужные 0.2 сек задержки
+            player.visualizer.update_frame()
+            time.sleep(0.016)
+    else:
+        time.sleep(0.2)
+
     while True:
         # Проверяем, не пытается ли система закрыться
         if pygame.mixer.get_init() is None:
@@ -149,8 +159,23 @@ def run_cli(player):
 
         if key == "n":
             player.next_track()
+            if player.visualizer.is_enabled:
+                player.visualizer.close_window()
+                track = player.playlist[player.current_index]
+                player.visualizer.init_window(track['title'])
         elif key == "p":
             player.prev_track()
+            if player.visualizer.is_enabled:
+                player.visualizer.close_window()
+                track = player.playlist[player.current_index]
+                player.visualizer.init_window(track['title'])
+        elif key == "v":  # <-- НАША НОВАЯ КНОПКА
+            player.visualizer.is_enabled = not player.visualizer.is_enabled
+            if player.visualizer.is_enabled:
+                track = player.playlist[player.current_index]
+                player.visualizer.init_window(track['title'])
+            else:
+                player.visualizer.close_window()
         elif key in ("space", " "):
             player.toggle_pause()
         elif key == "r":
@@ -179,4 +204,5 @@ def run_cli(player):
             # Возвращаем терминал в стандартный режим при выходе
             sys.stdout.write("\033[2J\033[H--- До встречи! ---\n")
             sys.stdout.flush()
+            player.visualizer.close_window()
             break
