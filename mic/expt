@@ -1,0 +1,849 @@
+> /export hide-sensitive
+# 2026-11-23 16:21:55 by RouterOS 7.24.2
+# software id = I950-1G0T
+#
+# model = CRS326-24G-2S+
+# serial number = 94550A203C51
+/caps-man channel
+add band=2ghz-b/g/n control-channel-width=20mhz extension-channel=disabled frequency=2412,2432,2452,2472 \
+    name=chan2 reselect-interval=1d tx-power=40
+add band=5ghz-a/n/ac control-channel-width=20mhz extension-channel=XXXX frequency=5180,5260,5660 name=chan5 \
+    reselect-interval=1d save-selected=yes tx-power=20
+/interface pptp-client
+add comment="FREE VPN" connect-to=euro217.vpnbook.com name=freevpn user=vpnbook
+/interface bridge
+add admin-mac=74:4D:28:DE:BF:6D auto-mac=no comment=defconf name=bridge port-cost-mode=short
+add igmp-snooping=yes name=bridge_local port-cost-mode=short protocol-mode=none
+add igmp-snooping=yes name=iptv port-cost-mode=short protocol-mode=none
+/interface ethernet
+set [ find default-name=ether1 ] comment=wan
+set [ find default-name=ether2 ] comment="wi-fi connect"
+set [ find default-name=ether3 ] comment=lan
+set [ find default-name=ether8 ] comment=TV_zal
+set [ find default-name=ether13 ] comment=notebook_server
+set [ find default-name=ether14 ] comment=room_01
+set [ find default-name=ether17 ] comment=srv-home
+set [ find default-name=ether18 ] comment="lan, tv_pristavka"
+set [ find default-name=ether21 ] comment="wi-fi connect"
+set [ find default-name=ether23 ] comment=rezerf
+set [ find default-name=sfp-sfpplus1 ] comment=sfp-modules disabled=yes
+set [ find default-name=sfp-sfpplus2 ] disabled=yes
+/interface ovpn-client
+add certificate=new cipher=aes256-cbc comment=vpn_my.mgnhost.com connect-to=193.0.178.10 mac-address=\
+    02:61:B8:8E:87:80 max-mtu=1360 name=ovpn-out1 port=443 route-nopull=yes user=nobody
+/interface l2tp-client
+add allow-fast-path=yes comment=vpn_work connect-to=195.112.98.119 name=l2tp-out1 use-ipsec=yes user=\
+    avmitrohin@rainbow.g310
+add connect-to=uk.superfreevpn.com name=l2tp-out2 user=free
+/interface pppoe-client
+add add-default-route=yes comment=inet_rt disabled=no interface=ether1 max-mtu=1480 name=pppoe-out1 user=\
+    430869-1@KLG
+/caps-man datapath
+add bridge=bridge_local client-to-client-forwarding=yes local-forwarding=yes name=datapath1
+/caps-man security
+add authentication-types=wpa2-psk encryption=aes-ccm group-encryption=aes-ccm name=security1
+/caps-man configuration
+add channel=chan2 channel.band=2ghz-b/g/n country=russia3 datapath=datapath1 distance=indoors mode=ap name=\
+    cfg2 rx-chains=0,1,2,3 security=security1 ssid=gtr2 tx-chains=0,1,2,3
+add channel=chan5 country=russia3 datapath=datapath1 mode=ap name=cfg5 rx-chains=0,1,2,3 security=security1 \
+    ssid=gtr5 tx-chains=0,1,2,3
+/interface list
+add name=WAN
+add name=LAN
+add include=dynamic name=discovery
+/interface lte apn
+set [ find default=yes ] ip-type=ipv4 use-network-apn=no
+/interface wireless security-profiles
+set [ find default=yes ] supplicant-identity=MikroTik
+/ip dhcp-server option
+add code=15 name="DNS Suffix" value="'lcl'"
+add code=42 name=NTP value="'10.40.8.10'"
+add code=6 name=kids_yandex_dns value="'77.88.8.7''77.88.8.3'"
+/ip dhcp-server option sets
+add name=lan_set options="DNS Suffix,NTP"
+add name=kids_set options="kids_yandex_dns,DNS Suffix,NTP"
+/ip firewall layer7-protocol
+add name=unblock regexp="^.*(get|GET).+(ident.me|rutracker.org|nnm-club.me).*\$"
+add name=youtube regexp="^.+(youtube).*\$"
+/ip ipsec mode-config
+add name=freevpn responder=no
+/ip ipsec policy group
+add name=freevpn
+/ip ipsec profile
+set [ find default=yes ] dpd-interval=2m dpd-maximum-failures=5
+add dh-group=ecp521 dpd-interval=2m dpd-maximum-failures=5 enc-algorithm=aes-256 hash-algorithm=sha512 \
+    name=freevpn
+/ip ipsec peer
+add address=roosendaal-1-1.hideservers.net disabled=yes exchange-mode=ike2 name=freevpn port=443 profile=\
+    freevpn
+/ip ipsec proposal
+add auth-algorithms=sha256 disabled=yes enc-algorithms=aes-256-cbc name=freevpn pfs-group=ecp521
+/ip kid-control
+add fri=17h-22h mon=17h-21h name=kids_tv sat=12h-22h thu=17h-21h tue=17h-21h wed=17h-21h
+add fri=0s-1d mon=0s-1d name=system-dummy sat=0s-1d sun=0s-1d thu=0s-1d tue=0s-1d tur-fri=0s-1d tur-mon=\
+    0s-1d tur-sat=0s-1d tur-sun=0s-1d tur-thu=0s-1d tur-tue=0s-1d tur-wed=0s-1d wed=0s-1d
+/ip pool
+add name=pool1 ranges=10.40.8.100
+add name=dhcp_pool1 ranges=10.40.8.100-10.40.8.210
+add name=dhcp_pool2 ranges=192.168.0.10-192.168.0.254
+add name=pool_iptv next-pool=dhcp_pool1 ranges=10.40.10.20-10.40.10.30
+/ip dhcp-server
+add add-arp=yes address-pool=dhcp_pool1 dhcp-option-set=lan_set interface=bridge_local lease-time=3d name=\
+    dhcp1
+add add-arp=yes address-pool=pool_iptv interface=iptv lease-time=10m name=dhcp_iptv_lan
+/ip smb users
+set [ find default=yes ] disabled=yes
+/ip vrf
+add disabled=yes interfaces=ovpn-out1 name=vrf1
+/queue type
+add kind=pcq name=pcq_downloads_limit pcq-classifier=dst-address pcq-rate=20
+add kind=pcq name=pcq_uploads_limit pcq-classifier=src-address pcq-rate=20
+/queue simple
+add name=Group_Limit packet-marks=limit_traf queue=pcq_uploads_limit/pcq_downloads_limit target=0.0.0.0/32
+/routing bgp template
+set default disabled=no output.network=bgp-networks
+/routing ospf instance
+add disabled=no name=default-v2
+/routing ospf area
+add disabled=yes instance=default-v2 name=backbone-v2
+/routing table
+add fib name=vpn_mark
+add fib name=vpn_table
+add fib name=vpn_list
+/system script
+add dont-require-permissions=no name=wan_ataka owner=admini policy=\
+    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="# Script for blocking dangerous\
+    \_addresses that tried to connect to the router\r\
+    \n# https://forummikrotik.ru/viewtopic.php\?p=70410#p70410\r\
+    \n# tested on ROS 6.46.5\r\
+    \n# updated 2020/05/10\r\
+    \n\r\
+    \n:local dangerStrings [ /log find message~\"login failure for user \"; ];\r\
+    \n       :local routerUsers [ /user get number=0 name ];\r\
+    \n       foreach dangerString in=\$dangerStrings do={\r\
+    \n           do {\r\
+    \n               :local stringTemp ([ /log get \$dangerString message ]);\r\
+    \n               :local dangerUser ([ :pick \$stringTemp 23 ([ :find \$stringTemp \"from\" ] - 1) ]);\r\
+    \n               :local dangerIP ([ :pick \$stringTemp ([ :find \$stringTemp \"from\" ] + 5) ([ :find \$\
+    stringTemp \"via\" ] - 1) ]);\r\
+    \n               foreach routerUser in=\$routerUsers do={\r\
+    \n                   do {\r\
+    \n                       if ( \$routerUser != \$dangerUser ) do={\r\
+    \n                           if ([ /ip firewall address-list find address=\$dangerIP ] = \"\" ) do={ \r\
+    \n                               /ip firewall address-list add address=\$dangerIP list=\"blocklist\";\r\
+    \n                               :log warning (\">>> Added in black list user: \".\$dangerUser.\" from I\
+    P \".\$dangerIP);\r\
+    \n                           } \r\
+    \n                       }\r\
+    \n                   } on-error={ :log warning \">>> Script error. Not found active router user.\"; } \r\
+    \n               }\r\
+    \n           } on-error={ :log warning \">>> Script error. Not found danger user in log.\"; }\r\
+    \n       }\r\
+    \n"
+add dont-require-permissions=no name=backup_to_email owner=admini policy=\
+    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="{\
+    \n:log info \"Starting Backup Script...\";\
+    \n:local sysname [/system identity get name];\
+    \n:local sysver [/system resource get version];\
+    \n:log info \"Flushing DNS cache...\";\
+    \n/ip dns cache flush;\
+    \n:delay 2;\
+    \n:log info \"Deleting last Backups...\";\
+    \n:foreach i in=[/file find] do={:if ([:typeof [:find [/file get \$i name] \\\
+    \n\"\$sysname-backup-\"]]!=\"nil\") do={/file remove \$i}};\
+    \n:delay 2;\
+    \n:local smtpserv [:resolve \"smtp.yandex.ru\"];\
+    \n:local Eaccount \"dark-dance58@yandex.ru\";\
+    \n:local pass \"iezsklcsiwqarsfc\";\
+    \n:local backupfile (\"\$sysname-backup-\" . \\\
+    \n[:pick [/system clock get date] 7 11] . [:pick [/system \\\
+    \nclock get date] 0 3] . [:pick [/system clock get date] 4 6] . \".backup\");\
+    \n:log info \"Creating new Full Backup file...\";\
+    \n/system backup save name=\$backupfile;\
+    \n:delay 2;\
+    \n:log info \"Sending Full Backup file via E-mail...\";\
+    \n/tool e-mail send from=\"<\$Eaccount>\" to=\$Eaccount server=\$smtpserv \\\
+    \nport=587 user=\$Eaccount password=\$pass tls=starttls file=\$backupfile \\\
+    \nsubject=(\"\$sysname Full Backup (\" . [/system clock get date] . \")\") \\\
+    \nbody=(\"\$sysname full Backup file see in attachment.\\nRouterOS version: \\\
+    \n\$sysver\\nTime and Date stamp: \" . [/system clock get time] . \" \" . \\\
+    \n[/system clock get date]);\
+    \n:delay 5;\
+    \n:local exportfile (\"\$sysname-backup-\" . \\\
+    \n[:pick [/system clock get date] 7 11] . [:pick [/system \\\
+    \nclock get date] 0 3] . [:pick [/system clock get date] 4 6] . \".rsc\");\
+    \n:log info \"Creating new Setup Script file...\";\
+    \n/export verbose file=\$exportfile;\
+    \n:delay 2;\
+    \n:log info \"Sending Setup Script file via E-mail...\";\
+    \n/tool e-mail send from=\"<\$Eaccount>\" to=\$Eaccount server=\$smtpserv \\\
+    \nport=587 user=\$Eaccount password=\$pass tls=starttls file=\$exportfile \\\
+    \nsubject=(\"\$sysname Setup Script Backup (\" . [/system clock get date] . \\\
+    \n\")\") body=(\"\$sysname Setup Script file see in attachment.\\nRouterOS \\\
+    \nversion: \$sysver\\nTime and Date stamp: \" . [/system clock get time] . \" \\\
+    \n\" . [/system clock get date]);\
+    \n:delay 5;\
+    \n:log info \"All System Backups emailed successfully.\\nBackuping completed.\";\
+    \n}"
+add dont-require-permissions=no name=LogMikrotik owner=admini policy=\
+    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="# BEGIN SETUP\r\
+    \n:local scheduleName \"LogMikrotik\"\r\
+    \nlocal bot \"1138551801:AAHRBTbuBvquJyDO6OJyxgSOfkVR4M4aDiA\"\r\
+    \nlocal ChatID \"@mess_mikrotik_home_bot\"\r\
+    \n:local startBuf [:toarray [/log find message~\"logged in\" || message~\"login failure\"]]\r\
+    \n:local removeThese {\"telnet\";\"whatever string you want\"}\r\
+    \n# END SETUP\r\
+    \n\r\
+    \n# warn if schedule does not exist\r\
+    \n:if ([:len [/system scheduler find name=\"\$scheduleName\"]] = 0) do={\r\
+    \n  /log warning \"[LOGMON] ERROR: Schedule does not exist. Create schedule and edit script to match nam\
+    e\"\r\
+    \n}\r\
+    \n\r\
+    \n# get last time\r\
+    \n:local lastTime [/system scheduler get [find name=\"\$scheduleName\"] comment]\r\
+    \n# for checking time of each log entry\r\
+    \n:local currentTime\r\
+    \n# log message\r\
+    \n:local message\r\
+    \n \r\
+    \n# final output\r\
+    \n:local output\r\
+    \n\r\
+    \n:local keepOutput false\r\
+    \n# if lastTime is empty, set keepOutput to true\r\
+    \n:if ([:len \$lastTime] = 0) do={\r\
+    \n  :set keepOutput true\r\
+    \n}\r\
+    \n\r\
+    \n:local counter 0\r\
+    \n# loop through all log entries that have been found\r\
+    \n:foreach i in=\$startBuf do={\r\
+    \n \r\
+    \n# loop through all removeThese array items\r\
+    \n  :local keepLog true\r\
+    \n  :foreach j in=\$removeThese do={\r\
+    \n#   if this log entry contains any of them, it will be ignored\r\
+    \n    :if ([/log get \$i message] ~ \"\$j\") do={\r\
+    \n      :set keepLog false\r\
+    \n    }\r\
+    \n  }\r\
+    \n  :if (\$keepLog = true) do={\r\
+    \n   \r\
+    \n   :set message [/log get \$i message]\r\
+    \n\r\
+    \n#   LOG DATE\r\
+    \n#   depending on log date/time, the format may be different. 3 known formats\r\
+    \n#   format of jan/01/2002 00:00:00 which shows up at unknown date/time. Using as default\r\
+    \n    :set currentTime [ /log get \$i time ]\r\
+    \n#   format of 00:00:00 which shows up on current day's logs\r\
+    \n   :if ([:len \$currentTime] = 8 ) do={\r\
+    \n     :set currentTime ([:pick [/system clock get date] 0 11].\" \".\$currentTime)\r\
+    \n    } else={\r\
+    \n#     format of jan/01 00:00:00 which shows up on previous day's logs\r\
+    \n     :if ([:len \$currentTime] = 15 ) do={\r\
+    \n        :set currentTime ([:pick \$currentTime 0 6].\"/\".[:pick [/system clock get date] 7 11].\" \".\
+    [:pick \$currentTime 7 15])\r\
+    \n      }\r\
+    \n   }\r\
+    \n    \r\
+    \n#   if keepOutput is true, add this log entry to output\r\
+    \n   :if (\$keepOutput = true) do={\r\
+    \n     :set output (\$output.\$currentTime.\" \".\$message.\"\\r\\n\")\r\
+    \n   }\r\
+    \n\r\
+    \n    :if (\$currentTime = \$lastTime) do={\r\
+    \n     :set keepOutput true\r\
+    \n     :set output \"\"\r\
+    \n   }\r\
+    \n  }\r\
+    \n  :if (\$counter = ([:len \$startBuf]-1)) do={\r\
+    \n   :if (\$keepOutput = false) do={    \r\
+    \n     :if ([:len \$message] > 0) do={\r\
+    \n        :set output (\$output.\$currentTime.\" \".\$message.\"\\r\\n\")\r\
+    \n      }\r\
+    \n    }\r\
+    \n  }\r\
+    \n  :set counter (\$counter + 1)\r\
+    \n}\r\
+    \n\r\
+    \nif ([:len \$output] > 0) do={\r\
+    \n  /system scheduler set [find name=\"\$scheduleName\"] comment=\$currentTime\r\
+    \n  /tool fetch url=\"https://api.telegram.org/bot\$bot/sendmessage\?chat_id=\$ChatID&text=MikroTik aler\
+    t \$currentTime : \$output\" keep-result=no;\r\
+    \n}"
+/caps-man access-list
+add action=accept allow-signal-out-of-range=10s comment=clean disabled=no mac-address=98:D8:63:DC:33:74 \
+    ssid-regexp=""
+/caps-man manager
+set enabled=yes
+/caps-man manager interface
+add disabled=no forbid=yes interface=ether1
+/caps-man provisioning
+add action=create-dynamic-enabled hw-supported-modes=b,g,gn master-configuration=cfg2 name-format=\
+    prefix-identity name-prefix=2.4gHz radio-mac=48:8F:5A:C3:76:9F
+add action=create-dynamic-enabled hw-supported-modes=a,an,ac master-configuration=cfg5 name-format=\
+    prefix-identity name-prefix=5gHz radio-mac=48:8F:5A:C3:76:9E
+/certificate settings
+set builtin-trust-store=untrusted crl-download=yes
+/interface bridge port
+add bridge=iptv comment=defconf disabled=yes ingress-filtering=no interface=ether1 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether2 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether3 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether4 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether5 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether6 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether7 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether8 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether9 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether11 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether12 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether13 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether14 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether15 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether16 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether17 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether18 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether19 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether20 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether21 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether22 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge comment=defconf ingress-filtering=no interface=ether23 internal-path-cost=10 path-cost=10
+add bridge=bridge comment=defconf ingress-filtering=no interface=ether24 internal-path-cost=10 path-cost=10
+add bridge=bridge comment=defconf ingress-filtering=no interface=sfp-sfpplus1 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge comment=defconf ingress-filtering=no interface=sfp-sfpplus2 internal-path-cost=10 \
+    path-cost=10
+add bridge=bridge_local comment=defconf ingress-filtering=no interface=ether10 internal-path-cost=10 \
+    path-cost=10
+/ip firewall connection tracking
+set udp-timeout=10s
+/ip neighbor discovery-settings
+set discover-interface-list=!discovery
+/ip settings
+set max-neighbor-entries=8192
+/ipv6 settings
+set disable-ipv6=yes
+/interface detect-internet
+set detect-interface-list=all
+/interface list member
+add interface=pppoe-out1 list=WAN
+add interface=bridge_local list=LAN
+add interface=ovpn-out1 list=WAN
+add interface=ether1 list=discovery
+add interface=iptv list=LAN
+/interface ovpn-server server
+add auth=sha1,md5 mac-address=FE:1B:AA:F0:C0:37 name=ovpn-server1
+/ip address
+add address=192.168.88.1/24 comment=defconf interface=ether24 network=192.168.88.0
+add address=10.40.8.10/24 interface=bridge_local network=10.40.8.0
+add address=1.0.0.1/30 interface=ether1 network=1.0.0.0
+add address=10.40.10.10/24 interface=iptv network=10.40.10.0
+/ip arp
+add address=10.40.8.204 interface=bridge_local mac-address=70:F3:95:B3:9B:F1
+add address=10.40.8.207 comment=workspace interface=bridge_local mac-address=00:21:6B:13:F4:CA
+add address=10.40.8.209 interface=bridge_local mac-address=00:C3:F4:AF:E9:24
+/ip dhcp-client
+add disabled=yes interface=ether1 name=client1
+/ip dhcp-server alert
+add disabled=no interface=bridge_local on-alert="/tool e-mail send from=dark-dance58@yandex.ru server=77.88.\
+    21.158 to=dark-dance5\r\
+    \n8@yandex.ru subject=\"test_dhcp_alert\" body=\"dhcp test message\""
+/ip dhcp-server lease
+add address=10.40.8.205 mac-address=1C:C1:DE:B1:8D:19 server=dhcp1
+add address=10.40.8.201 client-id=1:10:7b:44:3b:a:50 mac-address=10:7B:44:3B:0A:50 server=dhcp1
+add address=10.40.8.207 comment=workspace mac-address=00:21:6B:13:F4:CA server=dhcp1
+add address=10.40.8.191 client-id=1:d4:62:ea:8c:65:f6 dhcp-option-set=kids_set mac-address=\
+    D4:62:EA:8C:65:F6 server=dhcp1
+add address=10.40.8.197 comment=TV_spalna mac-address=CC:2D:8C:D0:2D:70 server=dhcp1
+add address=10.40.8.208 client-id=1:b8:bc:5b:93:66:c4 comment=TV_zal mac-address=B8:BC:5B:93:66:C4 server=\
+    dhcp1
+add address=10.40.8.168 client-id=ff:5d:e2:6c:15:0:2:0:0:ab:11:4c:ad:e3:a5:39:81:75:e6 mac-address=\
+    3C:7C:3F:C1:0A:1A server=dhcp1
+add address=10.40.8.177 client-id=1:4:e5:98:81:58:6 comment=my_redmi_T9 mac-address=04:E5:98:81:58:06 \
+    server=dhcp1
+add address=10.40.8.145 client-id=1:fc:2:96:bc:94:b8 dhcp-option-set=kids_set mac-address=FC:02:96:BC:94:B8 \
+    server=dhcp1
+add address=10.40.8.146 client-id=1:fc:2:96:bc:19:84 dhcp-option-set=kids_set mac-address=FC:02:96:BC:19:84 \
+    server=dhcp1
+add address=10.40.8.106 client-id=1:5e:10:ad:43:e9:55 mac-address=5E:10:AD:43:E9:55 server=dhcp1
+add address=10.40.8.112 client-id=1:c6:90:3f:c6:37:b1 mac-address=C6:90:3F:C6:37:B1 server=dhcp1
+add address=10.40.8.100 client-id=1:f8:a2:6d:f3:3f:ed comment=Canon mac-address=F8:A2:6D:F3:3F:ED server=\
+    dhcp1
+/ip dhcp-server network
+add address=10.40.8.0/24 boot-file-name=pxelinux.com dhcp-option="NTP,DNS Suffix" dhcp-option-set=lan_set \
+    dns-server=10.40.8.10 domain=lcl gateway=10.40.8.10 netmask=24 ntp-server=10.40.8.10 wins-server=\
+    10.40.8.10
+add address=10.40.10.0/24 dns-server=10.40.8.10 gateway=10.40.8.10
+/ip dns
+set allow-remote-requests=yes servers=1.1.1.1,1.0.0.1,8.8.8.8
+/ip dns static
+add address=10.40.8.205 comment="DLNA server" name=home type=A
+add address=10.40.8.205 name=home.lcl type=A
+add address=10.40.8.207 comment="my loptop" name=workspace type=A
+add address=10.40.8.207 name=workspace.lcl type=A
+add address=10.40.8.10 comment=switch name=mikrotik type=A
+add address=10.40.8.10 name=mikrotik.lcl type=A
+add address=10.40.8.168 comment=srv name=srv-home type=A
+add address=10.40.8.168 name=srv-home.lcl type=A
+add address-list=Mikrotik-Youtube forward-to=1.1.1.1 match-subdomain=yes name=youtube.com type=FWD
+/ip firewall address-list
+add address=62.171.156.221 list=blocklist
+add address=178.79.177.74 list=blocklist
+add address=37.49.230.103 list=blocklist
+add address=185.125.231.153 list=blocklist
+add address=104.248.12.77 list=blocklist
+add address=94.242.29.3 list=blocklist
+add address=81.174.49.128 list=blocklist
+add address=192.119.67.62 list=blocklist
+add address=192.3.255.136 list=blocklist
+add address=165.22.77.219 list=blocklist
+add address=209.126.4.112 list=blocklist
+add address=95.111.238.255 list=blocklist
+add address=107.174.244.100 list=blocklist
+add address=37.49.230.180 list=blocklist
+add address=144.91.75.5 list=blocklist
+add address=167.71.104.240 list=blocklist
+add address=45.14.224.128 list=blocklist
+add address=141.98.81.108 list=blocklist
+add address=141.98.81.81 list=blocklist
+add address=141.98.81.99 list=blocklist
+add address=141.98.81.83 list=blocklist
+add address=141.98.81.84 list=blocklist
+add address=141.98.81.107 list=blocklist
+add address=95.181.172.44 list=blocklist
+add address=37.49.226.167 list=blocklist
+add address=167.172.33.42 list=blocklist
+add address=167.86.126.12 list=blocklist
+add address=142.93.217.221 list=blocklist
+add address=141.98.9.157 list=blocklist
+add address=141.98.9.159 list=blocklist
+add address=141.98.9.160 list=blocklist
+add address=141.98.9.161 list=blocklist
+add address=141.98.9.156 list=blocklist
+add address=141.98.9.137 list=blocklist
+add address=155.138.207.62 list=blocklist
+add address=50.3.177.108 list=blocklist
+add address=64.225.52.172 list=blocklist
+add address=178.128.91.122 list=blocklist
+add address=209.141.37.175 list=blocklist
+add address=192.3.209.167 list=blocklist
+add address=167.71.164.178 list=blocklist
+add address=167.172.206.81 list=blocklist
+add address=185.132.53.41 list=blocklist
+add address=185.132.53.0/24 list=blocklist
+add address=64.225.48.84 list=blocklist
+add address=27.75.204.184 list=blocklist
+add address=68.183.155.182 list=blocklist
+add address=124.65.18.102 list=blocklist
+add address=208.73.206.211 list=blocklist
+add address=176.58.138.27 list=blocklist
+add address=183.89.146.146 list=blocklist
+add address=45.95.169.6 list=blocklist
+add address=134.209.17.149 list=blocklist
+add address=14.243.212.65 list=blocklist
+add address=91.108.4.0/22 list=Telegram
+add address=91.108.8.0/22 list=Telegram
+add address=91.108.12.0/22 list=Telegram
+add address=91.108.16.0/22 list=Telegram
+add address=91.108.56.0/22 list=Telegram
+add address=149.154.160.0/22 list=Telegram
+add address=149.154.164.0/22 list=Telegram
+add address=149.154.168.0/22 list=Telegram
+add address=149.154.172.0/22 list=Telegram
+add address=195.62.46.43 list=blocklist
+add address=85.239.35.161 list=blocklist
+add address=37.49.226.126 list=blocklist
+add address=104.248.51.79 list=blocklist
+add address=103.133.106.244 list=blocklist
+add address=45.154.1.0 list=blocklist
+add address=37.49.226.184 list=blocklist
+add address=192.3.255.173 list=blocklist
+add address=116.105.195.243 list=blocklist
+add address=165.22.200.42 list=blocklist
+add address=87.251.74.50 list=blocklist
+add address=27.78.14.83 list=blocklist
+add address=167.172.243.168 list=blocklist
+add address=104.168.137.241 list=blocklist
+add address=45.154.1.59 list=blocklist
+add address=105.178.46.16 list=blocklist
+add address=205.185.123.139 list=blocklist
+add address=1.54.194.5 list=blocklist
+add address=45.55.58.119 list=blocklist
+add address=14.187.45.159 list=blocklist
+add address=113.173.196.93 list=blocklist
+add address=167.172.207.20 list=blocklist
+add address=161.35.184.76 list=blocklist
+add address=161.35.112.238 list=blocklist
+add address=161.35.97.123 list=blocklist
+add address=107.175.33.16 list=blocklist
+add address=107.175.33.19 list=blocklist
+add address=37.49.226.60 list=blocklist
+add address=110.136.56.58 list=blocklist
+add address=161.35.114.244 list=blocklist
+add address=10.40.8.207 list=blocklist
+add address=10.40.8.205 list=blocklist
+add address=10.40.8.173 list=blok
+add address=10.40.8.208 list=blok
+add address=10.40.8.123 list=blocklist
+add address=youtube.com list=Mikrotik-Youtube
+add address=nl.youtube.com list=Mikrotik-Youtube
+add address=jp.youtube.com list=Mikrotik-Youtube
+add address=accounts.youtube.com list=Mikrotik-Youtube
+add address=facebook.youtube.com list=Mikrotik-Youtube
+add address=admin.youtube.com list=Mikrotik-Youtube
+add address=ads.youtube.com list=Mikrotik-Youtube
+add address=cms.youtube.com list=Mikrotik-Youtube
+add address=p.youtube.com list=Mikrotik-Youtube
+add address=rtmp.youtube.com list=Mikrotik-Youtube
+add address=contributors.youtube.com list=Mikrotik-Youtube
+add address=payments.youtube.com list=Mikrotik-Youtube
+add address=fr.youtube.com list=Mikrotik-Youtube
+add address=corp.youtube.com list=Mikrotik-Youtube
+add address=live.youtube.com list=Mikrotik-Youtube
+add address=analytics.youtube.com list=Mikrotik-Youtube
+add address=studio.youtube.com list=Mikrotik-Youtube
+add address=www.youtube.com list=Mikrotik-Youtube
+add address=m.youtube.com list=Mikrotik-Youtube
+add address=de.youtube.com list=Mikrotik-Youtube
+add address=ca.youtube.com list=Mikrotik-Youtube
+add address=help.youtube.com list=Mikrotik-Youtube
+add address=parents.youtube.com list=Mikrotik-Youtube
+add address=mx.youtube.com list=Mikrotik-Youtube
+add address=music.youtube.com list=Mikrotik-Youtube
+add address=id.youtube.com list=Mikrotik-Youtube
+add address=research.youtube.com list=Mikrotik-Youtube
+add address=tv.youtube.com list=Mikrotik-Youtube
+add address=tw.youtube.com list=Mikrotik-Youtube
+add address=img.youtube.com list=Mikrotik-Youtube
+add address=in.youtube.com list=Mikrotik-Youtube
+add address=uk.youtube.com list=Mikrotik-Youtube
+add address=news.youtube.com list=Mikrotik-Youtube
+add address=insight.youtube.com list=Mikrotik-Youtube
+add address=ru.youtube.com list=Mikrotik-Youtube
+add address=s.youtube.com list=Mikrotik-Youtube
+add address=upload.youtube.com list=Mikrotik-Youtube
+add address=es.youtube.com list=Mikrotik-Youtube
+add address=it.youtube.com list=Mikrotik-Youtube
+add address=10.40.8.100-10.40.8.255 list=LOCAL-IP
+add address=kamaok.org.ua list=vpn_list
+add address=mongodb.com list=vpn_list
+add address=elastic.co list=vpn_list
+add address=2ip.io disabled=yes list=vpn_list
+add address=ipleak.net disabled=yes list=vpn_list
+add address=jut.su list=vpn_list
+add address=digitalocean.com list=vpn_list
+add address=t.torrentfilmov.net list=vpn_list
+add address=microsoft.com list=vpn_list
+add address=dl.google.com list=vpn_list
+add address=deb.opera.com list=vpn_list
+add address=flibusta.is list=vpn_list
+add address=professor-falken.com list=vpn_list
+add address=hykjmx.com list=vpn_list
+add address=qcad.org list=vpn_list
+add address=tolik-punkoff.com list=vpn_list
+add address=udemy.com list=vpn_list
+add address=lordfilms.day list=vpn_list
+add address=strava.com list=vpn_list
+add address=x.com list=vpn_list
+add address=abs.twimg.com list=vpn_list
+add address=api.twitter.com list=vpn_list
+add address=api.x.com list=vpn_list
+add address=t.co list=vpn_list
+add address=video.twimg.com list=vpn_list
+add address=gen.jut.su list=vpn_list
+add address=r260501.yandexwebcache.org list=vpn_list
+add address=hatchjs.com list=vpn_list
+add address=docs.vmware.com list=vpn_list
+add address=intel.com list=vpn_list
+add address=devblogs.microsoft.com list=vpn_list
+add address=tpo.sourcepole.ch list=vpn_list
+add address=api.telegram.org disabled=yes list=vpn_list
+add address=online-python.com list=vpn_list
+add address=onecompiler.com list=vpn_list
+add address=audiokniga.one disabled=yes list=vpn_list
+add address=artem.services list=vpn_list
+add address=blog.mailon.com.ua list=vpn_list
+add address=medium.com list=vpn_list
+add address=youtu.be list=Mikrotik-Youtube
+add address=instagram.com list=vpn_list
+add address=git-data.ru list=vpn_list
+add address=towel.blinkenlights.nl list=vpn_list
+add address=gabber.od.ua list=vpn_list
+add address=soundcloud.com list=vpn_list
+add address=mybrilliance.ru list=vpn_list
+add address=rapidgator.net list=vpn_list
+add address=javadoc.io list=vpn_list
+add address=rutor.info list=vpn_list
+add address=ok-torrent.ru list=vpn_list
+add address=sysadminmosaic.ru list=vpn_list
+add address=cdnbunny.org list=vpn_list
+add address=10.40.8.100 list=blocklist
+add address=noviello.it list=vpn_list
+add address=netflix.com list=vpn_list
+add address=help.netflix.com list=vpn_list
+add address=54.246.59.150 list=vpn_list
+add address=4olx.pirat.one list=vpn_list
+add address=play.google.com list=vpn_list
+add address=yourkit.com list=vpn_list
+add address=web.whatsapp.com list=vpn_list
+add address=static.whatsapp.net list=vpn_list
+add address=developer.jboss.org list=vpn_list
+add address=redhat.com list=vpn_list
+add address=access.redhat.com list=vpn_list
+add address=debian.org list=vpn_list
+add address=notepad-plus-plus.org list=vpn_list
+add address=pytty.org.ru list=vpn_list
+add address=ppp-vpdn-95.181.187.38.yarnet.ru list=blocklist
+add address=pool-48-21.ptcomm.ru list=blocklist
+add address=2.134.48.235.dynamic.telecom.kz list=blocklist
+add address=2.134.48.235.dynamic.telecom.kz list=blok
+add address=193.32.177.14 list=vpn_list
+add address=194.87.62.215 list=vpn_list
+add address=cpuid.com list=vpn_list
+add address=namecheap.com list=vpn_list
+add address=stytex.de list=vpn_list
+add address=automated-testing.info list=vpn_list
+add address=ru.asus.com list=vpn_list
+add address=asus.com list=vpn_list
+add address=mobiletrans.wondershare.com.ru list=vpn_list
+add address=raw.githubusercontent.com list=vpn_list
+add address=52.222.239.106 list=vpn_list
+add address=65.9.74.189 list=vpn_list
+add address=portal.cloud.hashicorp.com list=vpn_list
+add address=10.40.8.116 list=blocklist
+add address=landscape.cncf.io list=vpn_list
+add address=cht.sh list=vpn_list
+add address=acloud.guru list=vpn_list
+add address=pluralsight.com list=vpn_list
+add address=radar.cloudflare.com list=vpn_list
+add address=openweathermap.org list=vpn_list
+add address=home.openweathermap.org list=vpn_list
+add address=api.openweathermap.org list=vpn_list
+add address=en.cppreference.com list=vpn_list
+add address=kyverno.io list=vpn_list
+add address=10.40.8.106 list=kids_device
+add address=10.40.8.112 list=kids_device
+add address=10.40.8.146 list=kids_device
+add address=packages.buildkite.com list=vpn_list
+add address=d3fo0g5hm7lbuv.cloudfront.net list=vpn_list
+add address=githubusercontent.com list=vpn_list
+add address=files.pythonhosted.org list=vpn_list
+add address=t.me list=vpn_list
+/ip firewall filter
+add action=accept chain=input comment="Accept untracked (RAW) traffic" connection-state=untracked
+add action=reject chain=forward comment="Reject QUIC (HTTP/3) for VPN" dst-port=443 protocol=udp \
+    reject-with=icmp-network-unreachable routing-mark=*2
+add action=fasttrack-connection chain=forward comment="v7 Smart Fasttrack" connection-mark=!vpn-mark \
+    connection-state=established,related
+add action=accept chain=forward comment="Accept untracked (RAW) traffic" connection-state=untracked
+add action=accept chain=forward comment="Accept forward established/related" connection-state=\
+    established,related
+add action=drop chain=forward comment="Drop invalid forward" connection-state=invalid
+add action=drop chain=forward comment="Kids internet off" disabled=yes out-interface=pppoe-out1 \
+    src-address-list=kids_device time=21h-6h59m59s,sun,mon,tue,wed,thu,fri,sat
+add action=reject chain=forward comment="Block blocklist" dst-address-list=blocklist protocol=tcp \
+    reject-with=icmp-network-unreachable
+add action=accept chain=forward comment="IPTV UDP forwarding" dst-port=5000 in-interface=ether1 protocol=\
+    udp
+add action=accept chain=forward comment="Accept DST-NAT" connection-nat-state=dstnat connection-state=new
+add action=drop chain=forward comment="Drop all traffic from WAN to LAN" connection-state=new in-interface=\
+    !bridge_local
+add action=accept chain=input comment="Accept established/related" connection-state=established,related
+add action=accept chain=input comment="Accept established/related" connection-state=established,related
+add action=drop chain=input comment="Drop invalid" connection-state=invalid
+add action=accept chain=input comment="Accept CAPsMAN traffic" dst-address-type=local src-address-type=\
+    local
+add action=accept chain=input comment="Allow ICMP" limit=5,5:packet protocol=icmp
+add action=accept chain=input comment="Allow IGMP" in-interface=ether1 protocol=igmp
+add action=accept chain=input comment="IPTV UDP incoming" in-interface=ether1 protocol=udp
+add action=drop chain=input comment="Drop from PPPoE" in-interface=pppoe-out1
+add action=drop chain=input comment="Drop from Ether1 (IPTV WAN)" in-interface=ether1
+add action=accept chain=forward comment="Accept forward established/related" connection-state=\
+    established,related
+add action=drop chain=forward comment="Drop invalid forward" connection-state=invalid
+add action=drop chain=forward comment="Kids internet off" disabled=yes src-address-list=kids_device time=\
+    21h-6h59m59s,sun,mon,tue,wed,thu,fri,sat
+add action=reject chain=forward comment="Block blocklist" dst-address-list=blocklist protocol=tcp \
+    reject-with=icmp-network-unreachable
+add action=accept chain=forward comment="IPTV UDP forwarding" dst-port=5000 in-interface=ether1 protocol=\
+    udp
+add action=accept chain=forward comment="Accept DST-NAT" connection-nat-state=dstnat connection-state=new
+add action=drop chain=forward comment="Drop all traffic from WAN to LAN" connection-nat-state=!dstnat \
+    connection-state=new in-interface=pppoe-out1
+add action=drop chain=forward comment="Drop all traffic from Ether1 to LAN" connection-nat-state=!dstnat \
+    connection-state=new in-interface=ether1
+/ip firewall mangle
+add action=change-mss chain=forward comment="v7 Global Iron MSS Fix" new-mss=1300 protocol=tcp tcp-flags=\
+    syn
+add action=accept chain=prerouting comment="Ignore LAN traffic" disabled=yes dst-address=10.40.8.0/24
+add action=mark-routing chain=prerouting comment="Mark traffic for VPN list" dst-address-list=vpn_list \
+    in-interface-list=LAN new-routing-mark=vpn_list
+add action=mark-routing chain=output comment="VPN: Force Router DNS via VPN" dst-port=53 new-routing-mark=\
+    vpn_table passthrough=no protocol=udp
+add action=mark-routing chain=output comment="VPN: Force Router DNS via VPN TCP" dst-port=53 \
+    new-routing-mark=vpn_table passthrough=no protocol=tcp
+add action=mark-connection chain=prerouting comment="Mark VPN connections" disabled=yes dst-address-list=\
+    vpn_list in-interface-list=LAN new-connection-mark=vpn-mark
+add action=accept chain=output comment="VPN: Allow router local DNS" dst-port=53 protocol=udp
+# inactive time
+add action=mark-packet chain=forward comment="Limit traffic for kids" dst-address-list=!LOCAL-IP \
+    new-packet-mark=limit_traf passthrough=no src-address-list=kids_device time=\
+    18h-13h,sun,mon,tue,wed,thu,fri,sat
+add action=mark-routing chain=prerouting dst-address-list=Mikrotik-Youtube in-interface=bridge_local \
+    new-routing-mark=vpn_list
+add action=mark-routing chain=prerouting dst-address-list=Telegram in-interface=bridge_local \
+    new-routing-mark=vpn_list
+add action=mark-routing chain=prerouting dst-address-list=vpn_list dst-port=1081 in-interface=bridge_local \
+    new-routing-mark=vpn_list protocol=tcp
+add action=change-mss chain=forward comment="Fix MTU for YouTube in vrf1" disabled=yes new-mss=1360 \
+    protocol=tcp routing-mark=*2 tcp-flags=syn
+/ip firewall nat
+add action=masquerade chain=srcnat comment="NAT for VPN VRF" disabled=yes dst-address=10.40.8.168 dst-port=\
+    1081 protocol=tcp
+add action=masquerade chain=srcnat out-interface=pppoe-out1 out-interface-list=WAN
+add action=redirect chain=dstnat dst-port=53 protocol=udp
+add action=redirect chain=dstnat dst-port=53 protocol=tcp
+/ip firewall raw
+add action=add-dst-to-address-list address-list=Mikrotik-Youtube address-list-timeout=1d chain=prerouting \
+    comment="Youtube - Buananet.com" content=.youtube. dst-address-list=!LOCAL-IP src-address-list=LOCAL-IP
+add action=add-dst-to-address-list address-list=Mikrotik-Youtube address-list-timeout=1d chain=prerouting \
+    comment="Youtube - Buananet.com" content=.googlevideo. dst-address-list=!LOCAL-IP src-address-list=\
+    LOCAL-IP
+add action=add-dst-to-address-list address-list=Mikrotik-Youtube address-list-timeout=1d chain=prerouting \
+    comment="Youtube - Buananet.com" content=.youtu. dst-address-list=!LOCAL-IP src-address-list=LOCAL-IP
+add action=add-dst-to-address-list address-list=Mikrotik-Youtube address-list-timeout=1d chain=prerouting \
+    comment="Youtube - Buananet.com" content=.ytimg. dst-address-list=!LOCAL-IP src-address-list=LOCAL-IP
+add action=add-dst-to-address-list address-list=Mikrotik-Youtube address-list-timeout=1d chain=prerouting \
+    comment="Youtube - Buananet.com" content=yt3.ggpht.com dst-address-list=!LOCAL-IP src-address-list=\
+    LOCAL-IP
+add action=add-dst-to-address-list address-list=Mikrotik-Youtube address-list-timeout=1d chain=prerouting \
+    comment="Youtube - Buananet.com" content=youtubei.googleapis.com dst-address-list=!LOCAL-IP \
+    src-address-list=LOCAL-IP
+add action=add-dst-to-address-list address-list=Telegram address-list-timeout=none-dynamic chain=prerouting \
+    comment=Telegram content=.telegram. dst-address-list=!LOCAL-IP src-address-list=LOCAL-IP
+add action=notrack chain=prerouting comment="Raw: Offtrack LAN-to-LAN traffic" dst-address=10.40.8.0/24 \
+    src-address=10.40.8.0/24
+/ip firewall service-port
+set ftp disabled=yes
+set h323 disabled=yes
+set sip disabled=yes
+set pptp disabled=yes
+set udplite disabled=yes
+set dccp disabled=yes
+set sctp disabled=yes
+/ip ipsec identity
+add auth-method=eap certificate="" disabled=yes eap-methods=eap-mschapv2 generate-policy=port-strict \
+    mode-config=freevpn peer=freevpn policy-template-group=freevpn remote-certificate=hide.me.pem_0 \
+    username=dark_dance58
+/ip ipsec policy
+add disabled=yes dst-address=0.0.0.0/0 group=freevpn proposal=freevpn src-address=0.0.0.0/0 template=yes
+/ip kid-control device
+add mac-address=1C:C1:DE:B1:8D:19 name="home;1" user=system-dummy
+add mac-address=7C:8A:E1:89:94:9F name="work;1" user=system-dummy
+add mac-address=FC:02:96:BC:19:84 name="Redmi-Note-11;2" user=system-dummy
+add mac-address=3C:7C:3F:C1:0A:1A name="srv-home;4" user=system-dummy
+add mac-address=D4:9D:C0:63:25:1C name="TIZEN;3" user=system-dummy
+add mac-address=10:7B:44:3B:0A:50 name="RT-AC51U;-2" user=system-dummy
+add mac-address=D4:8A:3B:BE:E8:6E name="Capsula-mini-030062C8AD9A8E0D;6" user=system-dummy
+add mac-address=04:E5:98:81:58:06 name="M2010J19SY dark_phone;2" user=system-dummy
+/ip proxy
+set anonymous=yes cache-on-disk=yes enabled=yes
+/ip proxy access
+add action=deny dst-address=185.206.167.45
+add action=deny dst-address=87.250.248.0/21
+add action=deny dst-address=84.201.176.0/21
+/ip route
+add blackhole check-gateway=ping disabled=no dst-address=192.168.9.0/24
+add blackhole check-gateway=ping disabled=no dst-address=192.168.99.0/24 pref-src=192.168.62.242
+add dst-address=10.40.8.0/24 gateway=@main routing-table=*2
+add disabled=no distance=1 dst-address=0.0.0.0/0 gateway=10.40.8.168 routing-table=vpn_list scope=30 \
+    suppress-hw-offload=no target-scope=10
+add dst-address=10.40.8.0/24 gateway=@main routing-table=vpn_table
+/ip service
+set ftp disabled=yes
+set ssh available-from=10.40.8.0/24
+set telnet disabled=yes
+set www available-from=10.40.8.0/24 disabled=yes
+set winbox available-from=10.40.8.0/24
+set api disabled=yes
+set api-ssl disabled=yes
+/ip tftp
+add disabled=yes ip-addresses=10.40.8.0/24
+/routing bfd configuration
+add disabled=no interfaces=all min-rx=200ms min-tx=200ms multiplier=5
+/routing igmp-proxy
+set quick-leave=yes
+/routing igmp-proxy interface
+add alternative-subnets=0.0.0.0/0 interface=ether1 upstream=yes
+add interface=bridge_local
+add interface=iptv
+/routing rule
+add action=lookup-only-in-table comment="Allow vrf1 to see LAN" routing-mark=*2 table=main
+/snmp
+set contact=dark-dance58@yandex.ru location=home trap-version=2
+/system clock
+set time-zone-name=Europe/Moscow
+/system leds
+set 20 type=interface-receive
+set 23 type=interface-status
+/system ntp client
+set enabled=yes
+/system ntp server
+set enabled=yes manycast=yes multicast=yes
+/system ntp client servers
+add address=85.21.78.23
+add address=128.0.142.251
+/system scheduler
+add !days interval=30m name=block on-event="/system script run wan_ataka" policy=\
+    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon start-time=startup
+add !days interval=2w1d name=mail_backup on-event="/system script run backup_to_email" policy=\
+    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon start-time=startup
+add comment="jan/14/2021 22:22:30" !days disabled=yes interval=30s name=LogMikrotik on-event=\
+    "/system script run LogMikrotik" policy=\
+    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon start-time=startup
+/tool bandwidth-server
+set enabled=no
+/tool e-mail
+set certificate-verification=no from=dark-dance58@yandex.ru port=587 server=77.88.21.158 tls=starttls user=\
+    dark-dance58@yandex.ru
+/tool netwatch
+add comment="host to srv-home" disabled=no down-script="{\
+    \n:local smtpserv [:resolve \"smtp.yandex.ru\"];\
+    \n:local Eaccount \"dark-dance58@yandex.ru\";\
+    \n:local pass \"iezsklcsiwqarsfc\";\
+    \n:delay 3s;\
+    \n/tool e-mail send from=\"<\$Eaccount>\" to=\$Eaccount server=\$smtpserv port=587 user=\$Eaccount passw\
+    ord=\$pass tls=starttls subject=\"srv-home.lcl is DOWN\" body=\"10.40.8.205 is DOWN!\"\
+    \n}" host=10.40.8.168 interval=1m test-script="" timeout=2s type=simple up-script="{\
+    \n:local smtpserv [:resolve \"smtp.yandex.ru\"];\
+    \n:local Eaccount \"dark-dance58@yandex.ru\";\
+    \n:local pass \"iezsklcsiwqarsfc\";\
+    \n:delay 3s;\
+    \n/tool e-mail send from=\"<\$Eaccount>\" to=\$Eaccount server=\$smtpserv port=587 user=\$Eaccount passw\
+    ord=\$pass tls=starttls subject=\"srv-home.lcl is Up\" body=\"10.40.8.205 is Up!\"\
+    \n}"
+/tool traffic-monitor
+add interface=bridge_local name=tmon1
+add interface=pppoe-out1 name=tmon2 threshold=1
